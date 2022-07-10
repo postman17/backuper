@@ -1,0 +1,9 @@
+venv/
+.idea/
+db.sqlite3
+.env
+static/
+media/
+data/
+tmp/
+logs/

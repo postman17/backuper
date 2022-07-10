@@ -1,0 +1,64 @@
+version: "3"
+
+services:
+  backuper:
+    build: .
+    container_name: backuper
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./project:/app/project
+      - ./etc/app:/app/etc
+      - ./logs:/app/logs
+      - ./tmp:/app/tmp
+      - ./static:/app/static
+      - ./media:/app/media
+    networks:
+      - db
+      - redis
+
+  redis:
+    image: redis:6.0-alpine
+    container_name: backuper_redis
+    restart: always
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - redis
+
+  flower:
+    build: ./etc/flower
+    container_name: backuper_flower
+    depends_on:
+      - redis
+    command: celery --broker=redis://redis/10 flower
+    networks:
+      - redis
+    ports:
+      - "5555:5555"
+
+  db:
+    image: postgres:13-alpine
+    container_name: backuper_db
+    restart: always
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+        - ./data/database:/var/lib/postgresql/data
+        - ./etc/db/init-user.sql:/docker-entrypoint-initdb.d/init-user.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - db
+
+
+networks:
+    redis:
+        driver: bridge
+    db:
+        driver: bridge
