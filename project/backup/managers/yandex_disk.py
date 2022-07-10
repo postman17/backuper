@@ -1,15 +1,18 @@
+import os
 from jinja2 import Template
 
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
-from helpers.base_managers import YandexDiskBaseManager
+from helpers.base_managers import YandexDiskBaseManager, LocalContainerBaseManager
 from backup.forms import OauthClientCredentialsForm
 from backup.enums import BackupClientNameEnum
 from backup.managers.abstract import AbstractClientManager
 
 
-class YandexDiskManager(YandexDiskBaseManager, AbstractClientManager):
+class YandexDiskManager(
+    LocalContainerBaseManager, YandexDiskBaseManager, AbstractClientManager
+):
     """Yandex disk clients manager."""
 
     auth_type = "oauth"
@@ -47,3 +50,22 @@ class YandexDiskManager(YandexDiskBaseManager, AbstractClientManager):
                     'Plz try again and check every step carefully.'
                 ),
             )))
+
+    def upload_file(
+            self,
+            access_token: str,
+            source_path: str,
+            target_path: str,
+            filename: str,
+            master_password: str,
+    ) -> str:
+        file_name_with_path = self.create_container(
+            source_path,
+            target_path,
+            filename,
+            master_password,
+        )
+        clean_filename = os.path.basename(file_name_with_path)
+        super().upload_file(access_token, file_name_with_path, f"backup/{clean_filename}")
+
+        return file_name_with_path

@@ -1,9 +1,10 @@
-from django.utils.encoding import smart_bytes
+from django.utils.encoding import smart_bytes, smart_str
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
 from backup.managers import YandexDiskManager, MailRuCloudManager, LocalContainerManager
 from helpers.utils import get_current_path_for_files
+from helpers.crypto import EncryptDecryptWrapper
 
 
 class ClientManagerMatcherException(Exception):
@@ -49,7 +50,9 @@ class ClientManagerMatcher:
             if not access_token:
                 raise Exception(_("No access_token in client record"))
 
-            prepared_fields["access_token"] = access_token
+            prepared_fields["access_token"] = smart_str(
+                EncryptDecryptWrapper.decrypt(access_token)
+            )
 
         if "source_path" in fields:
             source_path = service_record.source_folder
@@ -61,15 +64,11 @@ class ClientManagerMatcher:
             else:
                 prepared_fields["target_path"] = "/"
 
-        if "master_password" in fields:
-            master_password = client_record.config.get("master_password", None)
-            if master_password is None:
-                raise Exception(_("No master_password in client record"))
-
-            prepared_fields["master_password"] = (
-                smart_bytes(master_password) if
-                master_password != "" else settings.MASTER_PASSWORD
-            )
+        master_password = client_record.config.get("master_password", None)
+        prepared_fields["master_password"] = (
+            smart_bytes(master_password) if
+            master_password else smart_bytes(settings.MASTER_PASSWORD)
+        )
 
         filename = manager_method(**prepared_fields)
         return filename

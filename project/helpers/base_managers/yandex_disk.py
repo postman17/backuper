@@ -3,6 +3,7 @@ https://yadisk.readthedocs.io/ru/latest/intro.html
 https://github.com/ivknv/yadisk
 """
 import yadisk
+import traceback
 
 
 class YandexDiskBaseManager:
@@ -25,12 +26,13 @@ class YandexDiskBaseManager:
         return fields
 
     def upload_file(
-            self, access_token: str, source_path: str, target_path: str
+            self, access_token: str, source_path: str, target_path: str,
     ) -> bool:
         try:
             client = yadisk.YaDisk(token=access_token)
             client.upload(source_path, target_path, overwrite=True)
         except Exception as exc:
+            print("exxxxc ", traceback.format_exc())
             return False
 
         return True
