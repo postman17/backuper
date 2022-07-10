@@ -103,7 +103,7 @@ STATIC_ROOT = os.path.join(BASE_DIR.parent, "static")
 
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media/')
+MEDIA_ROOT = os.path.join(BASE_DIR.parent, 'media')
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

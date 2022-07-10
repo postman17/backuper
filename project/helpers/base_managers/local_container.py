@@ -14,4 +14,4 @@ class LocalContainerBaseManager:
             os.makedirs(target_path, exist_ok=True)
 
         zip_folder(source_path, filename, master_password)
-        return True
+        return filename

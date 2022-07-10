@@ -71,8 +71,8 @@ class ClientManagerMatcher:
                 master_password != "" else settings.MASTER_PASSWORD
             )
 
-        is_succeed = manager_method(**prepared_fields)
-        return is_succeed
+        filename = manager_method(**prepared_fields)
+        return filename
 
 
 BACKUP_CLIENT_MANAGERS_MATCHER = ClientManagerMatcher(
