@@ -37,6 +37,14 @@ class BackupClient(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
     def __str__(self):
         return f"{self.storage_name}"
 
+    def __repr__(self):
+        return (
+            f"BackupClient id {self.id}: "
+            f"storage name - {self.storage_name}, "
+            f"client name - {self.client_name}, "
+            f"status - {self.get_status_display()}"
+        )
+
     def set_credentials_confirmed(self):
         self.status = BackupClientStatusEnum.CREDENTIALS_CONFIRMED
         self.save(update_fields=['status'])
@@ -72,6 +80,14 @@ class BackupClientTemporaryState(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbst
 
     def __str__(self):
         return self.client.storage_name
+
+    def __repr__(self):
+        return (
+            f"BackupClientTemporaryState id {self.id}: "
+            f"client name - {self.client.name}, "
+            f"state - {self.get_state_display()}, "
+            f"status - {self.get_status_display()}"
+        )
 
     def save(self, *args, **kwargs):
         super(BackupClientTemporaryState, self).save(*args, **kwargs)
@@ -121,6 +137,13 @@ class ServiceForBackup(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
     def __str__(self):
         return f"{self.service_name}"
 
+    def __repr__(self):
+        return (
+            f"ServiceForBackup id {self.id}: "
+            f"service name - {self.service_name}, "
+            f"source folder - {self.source_folder}"
+        )
+
 
 class Backup(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract, FilesAbstract):
     """Represent a backup."""
@@ -152,3 +175,9 @@ class Backup(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract, FilesAbstract)
 
     def __str__(self):
         return f"{self.name}"
+
+    def __repr__(self):
+        return (
+            f"Backup id {self.id}: "
+            f"name - {self.name}"
+        )

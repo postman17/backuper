@@ -1,17 +1,20 @@
-import os
+import logging
 
 from helpers.utils import get_current_media_path_for_files
-from helpers.zip_archives import zip_folder
+from helpers.zip_archives import zipper
+from helpers.base_managers.base import BaseManager
 
 
-class LocalContainerBaseManager:
-    def check_path(self, path: str) -> bool:
-        return os.path.exists(path)
+logger = logging.getLogger(__name__)
 
+
+class LocalContainerBaseManager(BaseManager):
     def create_container(self, source_path: str, target_path, filename=None, master_password=None) -> str:
+        logger.info(f"Local container base manager: started, {source_path}")
         filename = get_current_media_path_for_files(f"{filename}.zip")
-        if not self.check_path(target_path):
-            os.makedirs(target_path, exist_ok=True)
+        self.create_path(target_path)
 
-        zip_folder(source_path, filename, master_password)
+        zipper(source_path, filename, master_password)
+
+        logger.info(f"Local container base manager: finished, {filename}")
         return filename

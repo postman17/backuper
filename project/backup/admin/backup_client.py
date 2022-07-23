@@ -130,10 +130,12 @@ class BackupClientAdmin(CreatedAtAndUpdatedAtAdminMixin, admin.ModelAdmin):
         ClientManager = BACKUP_CLIENT_MANAGERS_MATCHER.get_manager_by_client_name(client_name)
         manager = ClientManager()
         manager_method = getattr(manager, manager.create_client_action_method)
+
         attrs_for_manager_method = {
             field: credentials_form_instance.cleaned_data.get(field)
             for field in manager.create_client_action_method_fields
         }
+
         data = manager_method(**attrs_for_manager_method)
         context = {
             "title": f"Backup Client tuning for {BackupClientNameEnum(client_name).label}",

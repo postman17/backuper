@@ -26,15 +26,13 @@ class OauthCodeView(View):
             raise Exception("Temporary state not found")
 
         client = temp_state.client
-        client_id = EncryptDecryptWrapper.get_decrypted_value(client.config, "client_id")
-        client_secret = EncryptDecryptWrapper.get_decrypted_value(client.config, "client_secret")
-        if not client_id or not client_secret:
+        if not temp_state.client.config.get("client_id") or not temp_state.client.config.get("client_secret"):
             raise Exception("Credentials not found")
 
         manager = BACKUP_CLIENT_MANAGERS_MATCHER.get_manager_by_client_name(
             temp_state.client.client_name
         )()
-        tokens = manager.get_tokens(client_id, client_secret, code)
+        tokens = manager.get_tokens(client.config, code)
 
         encrypted_tokens = EncryptDecryptWrapper.encrypt_sensitive_fields(tokens)
         client.config.update(encrypted_tokens)

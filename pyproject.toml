@@ -19,6 +19,8 @@ django-celery-results = "^2.3.1"
 Jinja2 = "^3.1.2"
 cryptography = "^37.0.4"
 pyzipper = "^0.3.5"
+google-api-python-client = "^2.53.0"
+google-auth-oauthlib = "^0.5.2"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"

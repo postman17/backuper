@@ -5,36 +5,32 @@ from jinja2 import Template
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
-from helpers.base_managers import YandexDiskBaseManager, LocalContainerBaseManager
-from backup.forms import OauthClientCredentialsForm
-from backup.enums import BackupClientNameEnum
+from helpers.base_managers import GoogleDriveBaseManager, LocalContainerBaseManager
 from backup.managers.abstract import AbstractClientManager
+from backup.enums import BackupClientNameEnum
+from backup.forms import GoogleDriveOauthClientCredentialsForm
 from helpers.crypto import EncryptDecryptWrapper
 
 
 logger = logging.getLogger(__name__)
 
 
-class YandexDiskManager(
-    LocalContainerBaseManager, YandexDiskBaseManager, AbstractClientManager
-):
-    """Yandex disk clients manager."""
-
+class GoogleDriveManager(LocalContainerBaseManager, GoogleDriveBaseManager, AbstractClientManager):
     auth_type = "oauth"
-    client_name = BackupClientNameEnum.YANDEX_DRIVE
+    client_name = BackupClientNameEnum.GOOGLE_DRIVE
     create_client_action_method = "get_oauth_code_url"
     create_client_action_method_fields = ["client_id", "state", "redirect_url"]
-    create_client_form = OauthClientCredentialsForm
+    create_client_form = GoogleDriveOauthClientCredentialsForm
     backup_method = "upload_file"
     backup_method_fields = ["access_token", "source_path", "target_path"]
     is_local = False
-    path_to_create_client_template = 'project/backup/templates/backup/jinja2_templates/yandex_disk_oauth_info.html'
+    path_to_create_client_template = 'project/backup/templates/backup/jinja2_templates/google_drive_oauth_info.html'
 
     def create_client_form_help_text(self) -> str:
         with open(self.path_to_create_client_template) as file:
             template = Template(file.read())
             return _(str(template.render(
-                url='https://yandex.ru/dev/id/doc/dg/oauth/tasks/register-client.html',
+                url="https://developers.google.com/identity/protocols/oauth2/",
                 site_url=settings.SITE_URL,
             )))
 
@@ -61,10 +57,8 @@ class YandexDiskManager(
 
     def get_tokens(self, config: dict, code: str) -> dict:
         logger.info(f"{self.client_name}: get tokens started")
-
-        client_id = EncryptDecryptWrapper.get_decrypted_value(config.get("client_id"), "client_id")
-        client_secret = EncryptDecryptWrapper.get_decrypted_value(config.get("client_secret"), "client_secret")
-        tokens = super().get_tokens(client_id, client_secret, code)
+        config = EncryptDecryptWrapper.decrypt_sensitive_fields(config)
+        tokens = super().get_tokens(config, code)
 
         logger.info(
             f"{self.client_name}: get tokens finished - {EncryptDecryptWrapper.mask_sensitive_data(tokens)}"
@@ -72,14 +66,15 @@ class YandexDiskManager(
         return tokens
 
     def upload_file(
-        self,
-        access_token: str,
-        source_path: str,
-        target_path: str,
-        filename: str,
-        master_password: str,
+            self,
+            access_token: str,
+            source_path: str,
+            target_path: str,
+            filename: str,
+            master_password: str,
     ) -> str:
         logger.info(f"{self.client_name}: upload_file started")
+
         file_name_with_path = self.create_container(
             source_path,
             target_path,

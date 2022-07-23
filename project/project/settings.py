@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 
+import pyzipper
+
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -121,6 +124,36 @@ CACHES = {
 }
 
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "console": {"format": "%(levelname)-8s %(name)-12s %(module)s:%(lineno)s\n" "%(message)s"},
+        "file": {"format": "%(asctime)s %(levelname)-8s %(name)-12s " "%(module)s:%(lineno)s\n%(message)s"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "console",
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "django": {"level": "INFO", "handlers": ["console"]},
+        "app": {
+            "level": "DEBUG",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+    },
+}
+
+
 CELERY_RESULT_BACKEND = "django-db"
 CELERY_TIMEZONE = "Europe/Moscow"
 CELERY_BROKER_URL = os.environ.get("BROKER_URL", "redis://redis/10")
@@ -138,3 +171,9 @@ BACKUP_CLIENT_TEMP_STATE_LIFETIME_SECONDS = 60
 
 
 PATH_TO_FILES_FORMAT = "uploads/documents/{date}/"
+
+
+FOLDER_IN_REMOTE_STORAGE = os.environ.get("FOLDER_IN_REMOTE_STORAGE", "backup")
+
+
+ZIP_ARCHIVE_COMPRESSION = pyzipper.ZIP_DEFLATED

@@ -1,10 +1,21 @@
+import logging
+
 from django.utils.encoding import smart_bytes, smart_str
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
-from backup.managers import YandexDiskManager, MailRuCloudManager, LocalContainerManager
+from backup.managers import (
+    YandexDiskManager,
+    MailRuCloudManager,
+    LocalContainerManager,
+    DbDumpClientManager,
+    GoogleDriveManager,
+)
 from helpers.utils import get_current_path_for_files
 from helpers.crypto import EncryptDecryptWrapper
+
+
+logger = logging.getLogger(__name__)
 
 
 class ClientManagerMatcherException(Exception):
@@ -37,6 +48,7 @@ class ClientManagerMatcher:
         return manager.create_client_form_help_text()
 
     def execute_backup(self, client_record, service_record):
+        logger.info(f"Execute backup: started, {repr(client_record)}, {repr(service_record)}")
         manager = self.get_manager_by_client_name(
             client_record.client_name
         )()
@@ -64,6 +76,18 @@ class ClientManagerMatcher:
             else:
                 prepared_fields["target_path"] = "/"
 
+        if "remote_address" in fields:
+            prepared_fields["remote_address"] = client_record.config["remote_address"]
+
+        if "db_port" in fields:
+            prepared_fields["db_port"] = client_record.config["db_port"]
+
+        if "username" in fields:
+            prepared_fields["username"] = client_record.config["username"]
+
+        if "database_name" in fields:
+            prepared_fields["database_name"] = client_record.config["database_name"]
+
         master_password = client_record.config.get("master_password", None)
         prepared_fields["master_password"] = (
             smart_bytes(master_password) if
@@ -71,13 +95,25 @@ class ClientManagerMatcher:
         )
 
         filename = manager_method(**prepared_fields)
+
+        logger.info(
+            (
+                f"Execute backup: finished, "
+                f"{repr(client_record)}, "
+                f"{repr(service_record)}, "
+                f"{filename}"
+            )
+        )
         return filename
 
 
+# Add new manager to here
 BACKUP_CLIENT_MANAGERS_MATCHER = ClientManagerMatcher(
     [
         YandexDiskManager,
         MailRuCloudManager,
         LocalContainerManager,
+        DbDumpClientManager,
+        GoogleDriveManager,
     ]
 )

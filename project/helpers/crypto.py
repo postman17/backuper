@@ -5,6 +5,14 @@ from django.utils.encoding import smart_bytes, smart_str
 
 
 class EncryptDecryptWrapper:
+    DEFAULT_FIELDS = [
+        'client_id',
+        'client_secret',
+        'access_token',
+        'refresh_token',
+        'master_password',
+    ]
+
     @classmethod
     def encrypt(cls, data, key=None):
         """Encrypt string by key."""
@@ -38,6 +46,37 @@ class EncryptDecryptWrapper:
         for key, value in data.items():
             if key in default_fields:
                 result_data[key] = smart_str(cls.encrypt(value))
+            else:
+                result_data[key] = value
+
+        return result_data
+
+    @classmethod
+    def decrypt_sensitive_fields(cls, data: dict, fields: list = None) -> dict:
+        """Decrypt sensitive dict values by keys."""
+        default_fields = cls.DEFAULT_FIELDS
+        if fields:
+            default_fields = fields
+
+        result_data = {}
+        for key, value in data.items():
+            if key in default_fields:
+                result_data[key] = smart_str(cls.decrypt(value))
+            else:
+                result_data[key] = value
+
+        return result_data
+
+    @classmethod
+    def mask_sensitive_data(cls, data: dict, fields: list = None) -> dict:
+        default_fields = cls.DEFAULT_FIELDS
+        if fields:
+            default_fields = fields
+
+        result_data = {}
+        for key, value in data.items():
+            if key in default_fields:
+                result_data[key] = f"***{key}-masked***"
             else:
                 result_data[key] = value
 

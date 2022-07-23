@@ -3,4 +3,8 @@
 
 ### Used materials:
 - https://github.com/ddragosd/python-rclone
-- 
+
+
+
+### Добавление новых клиентов
+- Добавьте базовый менеджер

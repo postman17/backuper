@@ -8,7 +8,7 @@ WORKDIR /app
 RUN apt update && apt upgrade -y
 RUN apt install -y curl unzip redis-server  \
     build-essential python3-dev libpcre3  \
-    libpcre3-dev
+    libpcre3-dev postgresql-client
 
 # Install poetry and pip packages
 RUN pip install poetry --no-cache-dir

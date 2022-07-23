@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -65,3 +67,37 @@ class ServiceForBackupForm(forms.ModelForm):
     class Meta:
         model = ServiceForBackup
         fields = ("service_name", "source_folder")
+
+
+class DbDumpCredentialsForm(ClientNameAndStorageNameFormMixin):
+    remote_address = forms.CharField(max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH)
+    db_port = forms.IntegerField(label=mark_safe(f"<br><br>{_('Database port')}"))
+    username = forms.CharField(
+        max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH, label=mark_safe(f"<br><br>{_('Database username')}")
+    )
+    database_name = forms.CharField(
+        max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH, label=mark_safe(f"<br><br>{_('Database name')}")
+    )
+
+
+class GoogleDriveOauthClientCredentialsForm(ClientNameAndStorageNameFormMixin):
+    config = forms.CharField(
+        max_length=1000,
+        label=_("Config"),
+        widget=forms.Textarea
+    )
+    state = forms.CharField(max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH, widget=forms.HiddenInput(), required=False)
+    redirect_url = forms.CharField(
+        max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH,
+        widget=forms.HiddenInput(),
+        required=False,
+        initial=f"{settings.SITE_URL}/backup/oauth-code/"
+    )
+
+    def clean(self):
+        """Unpack config to cleaned data."""
+        config = json.loads(self.cleaned_data['config']).get("web", {})
+        for key, value in config.items():
+            self.cleaned_data[key] = value
+
+        return self.cleaned_data

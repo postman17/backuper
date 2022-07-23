@@ -23,6 +23,9 @@ class FileObject(UUIDModelAbstract, CreatedAtAbstract, UpdatedAtAbstract, OwnerA
     def __str__(self):
         return f"{self.name}"
 
+    def __repr__(self):
+        return f"FileObject id {self.id}: {self.name}"
+
 
 class FilesAbstract(models.Model):
     files = models.ManyToManyField(FileObject, verbose_name=_("Files"), blank=True)
@@ -53,3 +56,10 @@ class StatusChangeLog(CreatedAtAbstract, UpdatedAtAbstract):
 
     def __str__(self):
         return f"{self.old_status} - {self.new_status}"
+
+    def __repr__(self):
+        return (
+            f"StatusChangeLog id {self.id}: "
+            f"Old status - {self.old_status}, "
+            f"New status - {self.new_status}"
+        )
