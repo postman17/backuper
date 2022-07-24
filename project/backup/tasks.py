@@ -1,4 +1,5 @@
 import os
+import traceback
 
 from project import celery_app
 from celery.utils.log import get_task_logger
@@ -7,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 from backup.models import Backup, ServiceForBackup, BackupClient
 from backup.matcher import BACKUP_CLIENT_MANAGERS_MATCHER
+from backup.enums import BackupStatusEnum
 from core.models import FileObject
 
 
@@ -27,32 +29,39 @@ def backup_by_service(service_id, client_id, backup_id):
         id=backup_id
     ).first()
     if not backup_record:
-        task_logger.error(f"Backup by service: backup record not found, id={backup_id}")
+        text = f"Backup by service: backup record not found, id={backup_id}"
+        backup_record.set_status(BackupStatusEnum.FAILED, description=text)
+        task_logger.error(text)
 
         return _("Backup record not found")
 
     service_record = ServiceForBackup.objects.filter(id=service_id).first()
     if not service_record:
-        task_logger.error(f"Backup by service: service record not found, id={service_id}")
+        text = f"Backup by service: service record not found, id={service_id}"
+        backup_record.set_status(BackupStatusEnum.FAILED, description=text)
+        task_logger.error(text)
 
         return _("Service record not found")
 
     client_record = BackupClient.objects.filter(id=client_id).first()
     if not client_record:
-        task_logger.error(f"Backup by service: client record not found. id={client_id}")
+        text = f"Backup by service: client record not found. id={client_id}"
+        backup_record.set_status(BackupStatusEnum.FAILED, description=text)
+        task_logger.error(text)
 
         return _("Client record not found")
 
     try:
         filename = BACKUP_CLIENT_MANAGERS_MATCHER.execute_backup(
-            client_record, service_record
+            client_record, service_record, backup_record, logger=task_logger
         )
     except Exception as exc:
+        backup_record.set_status(BackupStatusEnum.FAILED, description=traceback.format_exc())
         task_logger.error(
             (
                 f"Backup by service: execute backup error, "
                 f"{repr(backup_record)}, "
-                f"{repr(service_record)}"
+                f"{repr(service_record)}, "
                 f"{repr(client_record)}",
             ),
             exc_info=True
@@ -91,6 +100,8 @@ def backup(backup_id):
     if not backup_record:
         task_logger.error("Backup task: backup record not found")
         return _("Backup record not found")
+
+    backup_record.set_status(BackupStatusEnum.STARTED)
 
     for children_backup_record in backup_record.backups.all():
         backup.delay(children_backup_record.id)

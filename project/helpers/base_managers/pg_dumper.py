@@ -5,7 +5,7 @@ from helpers.utils import generate_filename
 from helpers.base_managers.base import BaseManager
 
 
-logger = logging.getLogger(__name__)
+base_manager_logger = logging.getLogger(__name__)
 
 
 class PgDumperBaseManager(BaseManager):
@@ -20,6 +20,7 @@ class PgDumperBaseManager(BaseManager):
             *args,
             **kwargs,
     ) -> str:
+        logger = kwargs.get("logger", base_manager_logger)
         logger.info(f"Pg dump base manager: started, {filename}")
         self.create_path(target_path)
 

@@ -141,14 +141,19 @@ LOGGING = {
     "loggers": {
         "django.request": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": "INFO",
             "propagate": True,
         },
         "django": {"level": "INFO", "handlers": ["console"]},
         "app": {
-            "level": "DEBUG",
+            "level": "INFO",
             "handlers": ["console"],
-            "propagate": False,
+            "propagate": True,
+        },
+        "celery": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": True,
         },
     },
 }

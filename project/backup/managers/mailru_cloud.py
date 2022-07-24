@@ -7,7 +7,6 @@ from backup.managers.abstract import AbstractClientManager
 class MailRuCloudManager(YandexDiskBaseManager, AbstractClientManager):
     """Mailru cloud clients manager."""
 
-    auth_type = "oauth"
     client_name = BackupClientNameEnum.MAILRU_CLOUD
     create_client_form = OauthClientCredentialsForm
 

@@ -30,7 +30,7 @@ from googleapiclient.discovery import build
 from helpers.base_managers.base import BaseManager
 
 
-logger = logging.getLogger(__name__)
+base_manager_logger = logging.getLogger(__name__)
 
 
 class GoogleDriveBaseManager(BaseManager):
@@ -40,17 +40,17 @@ class GoogleDriveBaseManager(BaseManager):
     SCOPE = "https://www.googleapis.com/auth/drive"
 
     def get_oauth_code_url(self, client_id: str, state: str, redirect_url: str) -> str:
-        logger.info(f"Google drive base manager: get oauth code url started")
+        base_manager_logger.info(f"Google drive base manager: get oauth code url started")
 
         url = f"""https://accounts.google.com/o/oauth2/auth?scope={self.SCOPE}
         &redirect_uri={redirect_url}&response_type=code&client_id={client_id}&state={state}"""
 
-        logger.info(f"Google drive base manager: get oauth code url finished - {url}")
+        base_manager_logger.info(f"Google drive base manager: get oauth code url finished - {url}")
         return url
 
     def get_tokens(self, config: dict, code: str) -> dict:
         """Google doesnt return refresh token((. """
-        logger.info(f"Google drive base manager: get tokens started")
+        base_manager_logger.info(f"Google drive base manager: get tokens started")
 
         flow = Flow.from_client_config(
             {"web": config},
@@ -59,17 +59,18 @@ class GoogleDriveBaseManager(BaseManager):
         )
         tokens = flow.fetch_token(code=code)
 
-        logger.info("Google drive base manager: get tokens finished")
+        base_manager_logger.info("Google drive base manager: get tokens finished")
         return tokens
 
-    def upload_file(self, access_token: str, source_path: str, target_path: str) -> bool:
+    def upload_file(self, access_token: str, source_path: str, target_path: str, **kwargs) -> bool:
+        logger = kwargs.get("logger", base_manager_logger)
         logger.info("Google drive base manager: upload file started")
 
         credentials = Credentials(access_token)
         service = build('drive', 'v3', credentials=credentials)
 
         parent_folder_name = target_path.split("/")[0]
-        folder_id = self.get_target_folder_id(access_token, parent_folder_name)
+        folder_id = self.get_target_folder_id(access_token, parent_folder_name, logger=logger)
         name = source_path.split("/")[-1]
         file_metadata = {
                         'name': name,
@@ -82,7 +83,8 @@ class GoogleDriveBaseManager(BaseManager):
         logger.info(f"Google drive base manager: upload file finished - {response}")
         return True
 
-    def create_folder(self, access_token: str, folder_name: str) -> str:
+    def create_folder(self, access_token: str, folder_name: str, **kwargs) -> str:
+        logger = kwargs.get("logger", base_manager_logger)
         logger.info("Google drive base manager: create folder started")
 
         credentials = Credentials(access_token)
@@ -99,7 +101,10 @@ class GoogleDriveBaseManager(BaseManager):
         logger.info(f"Google drive base manager: create folder finished - {response}")
         return response["id"]
 
-    def get_target_folder_id(self, access_token: str, folder_name: str) -> str:
+    def get_target_folder_id(
+            self, access_token: str, folder_name: str, need_create_folder=True, **kwargs
+    ) -> str:
+        logger = kwargs.get("logger", base_manager_logger)
         logger.info("Google drive base manager: get target folder id started")
 
         credentials = Credentials(access_token)
@@ -116,4 +121,34 @@ class GoogleDriveBaseManager(BaseManager):
                 return folder["id"]
 
         logger.info("Google drive base manager: get target folder id finished, folder not found")
-        return self.create_folder(access_token, folder_name)
+        if need_create_folder:
+            return self.create_folder(access_token, folder_name, logger=logger)
+
+        return ""
+
+    def check_access_token(self, access_token: str, **kwargs) -> bool:
+        try:
+            self.get_target_folder_id(access_token, "asdfghjkl", need_create_folder=False)
+        except Exception as exc:
+            return False
+
+        return True
+
+    def refresh_token(self, config, **kwargs) -> dict:  # TODO: check if my app approve
+        logger = kwargs.get("logger", base_manager_logger)
+        logger.info(f"Google drive base manager: refresh token started")
+
+        flow = Flow.from_client_config(
+            {"web": config},
+            scopes=[self.SCOPE],
+            redirect_uri=config.get("redirect_url"),
+        )
+        tokens = flow.oauth2session.refresh_token(
+            flow.client_config['token_uri'],
+            refresh_token=flow.client_config["refresh_token"],
+            client_id=flow.client_config["client_id"],
+            client_secret=flow.client_config['client_secret']
+        )
+
+        logger.info("Google drive base manager: refresh token finished")
+        return tokens

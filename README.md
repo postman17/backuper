@@ -1,10 +1,8 @@
-## Backup and restore dumps that are stored in free clouds (rClone web ui by Django admin)
+## Backup and restore dumps that are stored in free clouds
 
 
-### Used materials:
-- https://github.com/ddragosd/python-rclone
-
-
-
-### Добавление новых клиентов
-- Добавьте базовый менеджер
+- Creating users and admins
+```shell
+make create-admin username=<your username> email==<your email> password=<you password>
+make create-user username=<your username> email==<your email> password=<you password>
+```

@@ -9,12 +9,12 @@ from django.utils import timezone
 from django_celery_beat.models import PeriodicTask
 
 from backup.enums import BackupClientNameEnum, BackupStatusEnum, BackupClientTemporaryStateEnum, BackupClientStatusEnum
-from core.models import FilesAbstract
+from core.models import FilesAbstract, StatusLogAbstract, StatusChangeLog
 from helpers.models import CreatedAtAbstract, OwnerAbstract, UpdatedAtAbstract
 from helpers.utils import get_uuid_hex_state
 
 
-class BackupClient(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
+class BackupClient(StatusLogAbstract, OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
     """Represent a client for backup storage."""
 
     storage_name = models.CharField(_("Storage name"), unique=True, max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH)
@@ -50,7 +50,7 @@ class BackupClient(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
         self.save(update_fields=['status'])
 
 
-class BackupClientTemporaryState(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
+class BackupClientTemporaryState(StatusLogAbstract, OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
     """Keep temporary state for backup client checking."""
 
     client = models.ForeignKey(
@@ -145,7 +145,7 @@ class ServiceForBackup(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract):
         )
 
 
-class Backup(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract, FilesAbstract):
+class Backup(StatusLogAbstract, OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract, FilesAbstract):
     """Represent a backup."""
 
     name = models.CharField(_("Backup name"), unique=True, max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH)
@@ -181,3 +181,13 @@ class Backup(OwnerAbstract, CreatedAtAbstract, UpdatedAtAbstract, FilesAbstract)
             f"Backup id {self.id}: "
             f"name - {self.name}"
         )
+
+    def set_status(self, status, description=None):
+        self.status_logs.add(StatusChangeLog.objects.create(
+            old_status=self.status,
+            new_status=status,
+            description=description,
+        ))
+
+        self.status = status
+        self.save(update_fields=["status"])

@@ -22,7 +22,7 @@ class BackupClientForm(forms.ModelForm):
 
     class Meta:
         model = BackupClient
-        exclude = ("config", "status", "owner")
+        exclude = ("config", "status", "owner", "status_logs")
 
 
 class ClientNameAndStorageNameFormMixin(forms.Form):

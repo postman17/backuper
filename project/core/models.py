@@ -47,7 +47,7 @@ class StatusChangeLog(CreatedAtAbstract, UpdatedAtAbstract):
     )
     old_status = models.CharField(_("Old status"), max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH)
     new_status = models.CharField(_("New status"), max_length=settings.DEFAULT_CHARFIELD_MAXLENGTH)
-    description = models.TextField(_("Description"), blank=True)
+    description = models.TextField(_("Description"), null=True, blank=True)
 
     class Meta:
         ordering = ("-created_at",)
@@ -63,3 +63,10 @@ class StatusChangeLog(CreatedAtAbstract, UpdatedAtAbstract):
             f"Old status - {self.old_status}, "
             f"New status - {self.new_status}"
         )
+
+
+class StatusLogAbstract(models.Model):
+    status_logs = models.ManyToManyField(StatusChangeLog, verbose_name=_("Status change logs"), blank=True)
+
+    class Meta:
+        abstract = True

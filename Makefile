@@ -16,9 +16,18 @@ makemigrations:
 collectstatic:
 	docker-compose exec backuper python ./project/manage.py collectstatic
 
-create-default-users:
-	docker-compose exec backuper python ./project/manage.py createdefaultadmin
-	docker-compose exec backuper python ./project/manage.py createdefaultuser
+create-admin:
+	@(if test -n '$(username)' & test -n '$(email)' & test -n '$(password)'; then \
+  		docker-compose exec backuper python ./project/manage.py createdefaultadmin -u $(username) -e $(email) -p $(password); \
+  	  else \
+  	    docker-compose exec backuper python ./project/manage.py createdefaultadmin; \
+  	  fi)
 
-fill-rclone-providers-model:
-	docker-compose exec backuper python ./project/manage.py fill_rclone_providers
+create-user:
+	@(if test -n '$(username)' & test -n '$(email)' & test -n '$(password)'; then \
+  		docker-compose exec backuper python ./project/manage.py createdefaultuser -u $(username) -e $(email) -p $(password); \
+  	  else \
+  	    docker-compose exec backuper python ./project/manage.py createdefaultuser; \
+  	  fi)
+
+create-default-users: create-admin create-user

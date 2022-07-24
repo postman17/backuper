@@ -36,3 +36,8 @@ class BackupClientTemporaryStateEnum(EnumChoicesMixin, models.TextChoices):
 class BackupClientStatusEnum(EnumChoicesMixin, models.TextChoices):
     CREDENTIALS_NOT_CONFIRMED = "credentials_not_confirmed", _("Credentials not confirmed")
     CREDENTIALS_CONFIRMED = "credentials_confirmed", _("Credentials confirmed")
+
+
+class CreateContainerHandleEnum(EnumChoicesMixin, models.TextChoices):
+    BEFORE = "before", _("Create container before backup method")
+    AFTER = "after", _("Create container after backup method")
