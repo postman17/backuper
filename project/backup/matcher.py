@@ -1,5 +1,6 @@
 import os
 import logging
+import datetime
 
 from django.utils.encoding import smart_bytes, smart_str
 from django.utils.translation import gettext_lazy as _
@@ -71,7 +72,7 @@ class ClientManagerMatcher:
 
         return filename
 
-    def check_token(self, client_record, manager, access_token, prepared_fields):
+    def check_or_refresh_token(self, client_record, manager, access_token, prepared_fields):
         """Check access token or refresh if expired."""
         logger = prepared_fields["logger"]
         logger.info("Check token: started")
@@ -99,6 +100,27 @@ class ClientManagerMatcher:
         client_record.save(update_fields=["config"])
         logger.info("Check token: finished")
 
+    def delete_old_backups(self, manager, backup_record, **prepared_fields):
+        """Delete old backups."""
+        logger = prepared_fields["logger"]
+        logger.info("Delete old backups: started")
+
+        backup_files = backup_record.files.all()
+        if backup_files.count() <= settings.NUMBER_OF_KEEP_BACKUPS:
+            logger.info("Delete old backups: doesn't need deleting. Finished")
+            return
+
+        need_remove_backup_files = backup_files[settings.NUMBER_OF_KEEP_BACKUPS:]
+        for backup_file in need_remove_backup_files:
+            if manager.delete_file_method_name:
+                delete_file_method = getattr(manager, manager.delete_file_method_name)
+                prepared_fields["target_path"] = os.path.basename(backup_file.name)
+                delete_file_method(**prepared_fields)
+
+            backup_file.delete()
+
+        logger.info("Delete old backups: finished")
+
     def execute_backup(self, client_record, service_record, backup_record, logger=matcher_logger):
         logger.info(f"Execute backup: started, {repr(client_record)}, {repr(service_record)}")
 
@@ -109,8 +131,9 @@ class ClientManagerMatcher:
         fields = manager.backup_method_fields
         filename = None
 
+        now_timestamp = datetime.datetime.now().timestamp()
         prepared_fields = {
-            "filename": "_".join(service_record.service_name.split(" ")),
+            "filename": "_".join(service_record.service_name.split(" ")) + f".{now_timestamp}",
             "logger": logger,
         }
         if "access_token" in fields:
@@ -122,7 +145,7 @@ class ClientManagerMatcher:
                 EncryptDecryptWrapper.decrypt(access_token)
             )
             if BackupClientNameEnum(manager.client_name).data == "oauth":
-                self.check_token(client_record, manager, prepared_fields["access_token"], prepared_fields)
+                self.check_or_refresh_token(client_record, manager, prepared_fields["access_token"], prepared_fields)
 
         if "source_path" in fields:
             prepared_fields["source_path"] = service_record.source_folder
@@ -166,6 +189,8 @@ class ClientManagerMatcher:
             after_method = getattr(manager, manager.after_action_method_name, None)
             if after_method:
                 after_method(**prepared_fields)
+
+        self.delete_old_backups(manager, backup_record, **prepared_fields)
 
         backup_record.set_status(BackupStatusEnum.DONE)
         logger.info(

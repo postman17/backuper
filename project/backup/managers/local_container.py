@@ -17,6 +17,7 @@ class LocalContainerManager(LocalContainerBaseManager, AbstractClientManager):
     backup_method_fields = ["source_path", "target_path", "master_password"]
     create_container_handle = CreateContainerHandleEnum.BEFORE
     after_action_method_name = None
+    delete_file_method_name = None
 
     def create_client_form_help_text(self) -> str:
         return _("If keep empty, will use the backup service master password<br><br>")

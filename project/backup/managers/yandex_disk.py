@@ -9,13 +9,17 @@ from backup.forms import OauthClientCredentialsForm
 from backup.enums import BackupClientNameEnum, CreateContainerHandleEnum
 from backup.managers.abstract import AbstractClientManager
 from helpers.crypto import EncryptDecryptWrapper
+from backup.managers.base import BaseBackupManager
 
 
 manager_logger = logging.getLogger(__name__)
 
 
 class YandexDiskManager(
-    LocalContainerBaseManager, YandexDiskBaseManager, AbstractClientManager
+    BaseBackupManager,
+    LocalContainerBaseManager,
+    YandexDiskBaseManager,
+    AbstractClientManager
 ):
     """Yandex disk clients manager."""
 
@@ -28,6 +32,7 @@ class YandexDiskManager(
     path_to_create_client_template = 'project/backup/templates/backup/jinja2_templates/yandex_disk_oauth_info.html'
     create_container_handle = CreateContainerHandleEnum.BEFORE
     after_action_method_name = None
+    delete_file_method_name = "delete_file"
 
     def create_client_form_help_text(self) -> str:
         with open(self.path_to_create_client_template) as file:
@@ -70,6 +75,14 @@ class YandexDiskManager(
         )
         return tokens
 
+    def create_folder_if_need(self, access_token, logger, folder_name=settings.FOLDER_IN_REMOTE_STORAGE):
+        logger.info(f"{self.client_name}: create folder if need")
+
+        folder_files = self.get_folder_files(access_token, folder_name, logger)
+        logger.info(f"{self.client_name}: create folder if need - folder files - {folder_files}")
+        if not folder_files:
+            self.create_folder(access_token, folder_name, logger)
+
     def upload_file(
         self,
         access_token: str,
@@ -80,6 +93,8 @@ class YandexDiskManager(
         logger = kwargs.get("logger", manager_logger)
         logger.info(f"{self.client_name}: upload_file started")
 
+        self.create_folder_if_need(access_token, logger=logger)
+
         result = super().upload_file(
             access_token,
             target_path,
@@ -89,3 +104,8 @@ class YandexDiskManager(
 
         logger.info(f"{self.client_name}: upload_file finished, {result}")
         return target_path
+
+    def delete_file(self, access_token: str, target_path: str, **kwargs) -> bool:
+        file_path = self.get_remote_file_path(target_path)
+
+        return super().delete_file(access_token, file_path)

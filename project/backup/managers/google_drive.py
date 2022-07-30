@@ -10,12 +10,13 @@ from backup.managers.abstract import AbstractClientManager
 from backup.enums import BackupClientNameEnum, CreateContainerHandleEnum
 from backup.forms import GoogleDriveOauthClientCredentialsForm
 from helpers.crypto import EncryptDecryptWrapper
+from backup.managers.base import BaseBackupManager
 
 
 manager_logger = logging.getLogger(__name__)
 
 
-class GoogleDriveManager(LocalContainerBaseManager, GoogleDriveBaseManager, AbstractClientManager):
+class GoogleDriveManager(BaseBackupManager, LocalContainerBaseManager, GoogleDriveBaseManager, AbstractClientManager):
     client_name = BackupClientNameEnum.GOOGLE_DRIVE
     create_client_action_method = "get_oauth_code_url"
     create_client_action_method_fields = ["client_id", "state", "redirect_url"]
@@ -25,6 +26,7 @@ class GoogleDriveManager(LocalContainerBaseManager, GoogleDriveBaseManager, Abst
     path_to_create_client_template = 'project/backup/templates/backup/jinja2_templates/google_drive_oauth_info.html'
     create_container_handle = CreateContainerHandleEnum.BEFORE
     after_action_method_name = None
+    delete_file_method_name = "delete_file"
 
     def create_client_form_help_text(self) -> str:
         with open(self.path_to_create_client_template) as file:
@@ -84,3 +86,8 @@ class GoogleDriveManager(LocalContainerBaseManager, GoogleDriveBaseManager, Abst
 
         logger.info(f"{self.client_name}: upload_file finished, {result}")
         return target_path
+
+    def delete_file(self, access_token: str, target_path: str, **kwargs) -> bool:
+        file_path = self.get_remote_file_path(target_path)
+
+        return super().delete_file(access_token, file_path)

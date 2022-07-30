@@ -152,3 +152,44 @@ class GoogleDriveBaseManager(BaseManager):
 
         logger.info("Google drive base manager: refresh token finished")
         return tokens
+
+    def get_file_id(
+            self, access_token: str, file_name: str, **kwargs
+    ) -> str:
+        logger = kwargs.get("logger", base_manager_logger)
+        logger.info("Google drive base manager: get target file id started")
+
+        credentials = Credentials(access_token)
+        service = build('drive', 'v3', credentials=credentials)
+        results = service.files().list(
+            fields="nextPageToken, files(id, name, mimeType, size, parents, modifiedTime)"
+        ).execute()
+
+        for folder in results.get("files", []):
+            if folder.get("name", "") == file_name:
+                logger.info("Google drive base manager: get target file id finished, file found")
+                return folder["id"]
+
+        logger.info("Google drive base manager: get target file id finished, file not found")
+
+        return ""
+
+    def delete_file(self, access_token: str, target_path: str, **kwargs):
+        logger = kwargs.get("logger", base_manager_logger)
+        logger.info(f"Google drive base manager: delete file started, filename - {target_path}")
+
+        file_name = target_path.split("/")[-1]
+        file_id = self.get_file_id(access_token, file_name)
+
+        try:
+            credentials = Credentials(access_token)
+            service = build('drive', 'v3', credentials=credentials)
+            service.files().delete(file_id=file_id).execute()
+        except Exception:
+            logger.error("Google drive base manager: delete file error", exc_info=True)
+
+            return False
+
+        logger.info("Google drive base manager: delete file finished")
+        return True
+

@@ -57,3 +57,9 @@ class AbstractClientManager(ABC):
     # After backup do action method name
     def after_action_method_name(self):
         pass
+
+    @property
+    @abstractmethod
+    # Delete file method name
+    def delete_file_method_name(self):
+        pass

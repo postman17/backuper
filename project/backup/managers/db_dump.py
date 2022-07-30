@@ -20,6 +20,7 @@ class DbDumpClientManager(LocalContainerBaseManager, PgDumperBaseManager):
     backup_method_fields = ["remote_address", "db_port", "username", "database_name", "target_path", "source_path"]
     create_container_handle = CreateContainerHandleEnum.AFTER
     after_action_method_name = "remove_dump"
+    delete_file_method_name = None
 
     def create_client_form_help_text(self) -> str:
         return _("Enter database credentials. For remote address may use docker app name.<br><br>")

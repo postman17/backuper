@@ -61,6 +61,28 @@ class YandexDiskBaseManager:
         logger.info("Yandex disk base manager: refresh token finished")
         return self.get_tokens_from_response(response)
 
+    def get_folder_files(self, access_token: str, folder_name: str, logger, **kwargs) -> list:
+        try:
+            logger.info("Yandex disk base manager: get folder files started")
+            client = yadisk.YaDisk(token=access_token)
+            files = client.listdir(folder_name)
+            logger.info(f"Yandex disk base manager: get folder files finished, files - {files}")
+        except Exception:
+            logger.error("Yandex disk base manager: get folder files error", exc_info=True)
+            return []
+
+    def create_folder(self, access_token: str, folder_name: str, logger, **kwargs) -> bool:
+        try:
+            logger.info("Yandex disk base manager: create folder started")
+            client = yadisk.YaDisk(token=access_token)
+            data = client.mkdir(folder_name)
+        except Exception:
+            logger.error("Yandex disk base manager: create folder error", exc_info=True)
+            return False
+
+        logger.info(f"Yandex disk base manager: create folder finished - {data}")
+        return True
+
     def upload_file(
             self, access_token: str, source_path: str, target_path: str, **kwargs
     ) -> bool:
@@ -75,4 +97,18 @@ class YandexDiskBaseManager:
             return False
 
         logger.info("Yandex disk base manager: upload file finished")
+        return True
+
+    def delete_file(self, access_token: str, target_path: str, **kwargs) -> bool:
+        logger = kwargs.get("logger", base_manager_logger)
+        logger.info(f"Yandex disk base manager: delete file started, filename - {target_path}")
+        try:
+            client = yadisk.YaDisk(token=access_token)
+            client.remove(target_path, permanently=True)
+        except Exception:
+            logger.error("Yandex disk base manager: delete file error", exc_info=True)
+
+            return False
+
+        logger.info("Yandex disk base manager: delete file finished")
         return True
